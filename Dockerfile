@@ -1,14 +1,20 @@
-# Base image
+# ==========================================
+# STAGE 1: BASE IMAGE
+# ==========================================
 FROM node:20-alpine AS base
 
-# Install dependencies (Layer cached)
+# ==========================================
+# STAGE 2: INSTALL DEPENDENCIES (DEPS)
+# ==========================================
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Build the Next.js application
+# ==========================================
+# STAGE 3: BUILDER
+# ==========================================
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -16,7 +22,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production image
+# ==========================================
+# STAGE 4: RUNNER (Production)
+# ==========================================
 FROM base AS runner
 WORKDIR /app
 
@@ -32,7 +40,7 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Copy only the standalone output
+# Copy only the highly-optimized standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
