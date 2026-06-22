@@ -21,7 +21,7 @@ api.interceptors.request.use(async (config) => {
 });
 
 export const getCompanies = async (): Promise<Company[]> => {
-  const { data } = await api.get('/companies');
+  const { data } = await api.get('/companies/');
   return data;
 };
 
@@ -31,7 +31,7 @@ export const getCustomers = async (companyId: string): Promise<Customer[]> => {
 };
 
 export const createCustomer = async (companyId: string, name: string, phone: string, email?: string): Promise<Customer> => {
-  const { data } = await api.post(`/customers`, {
+  const { data } = await api.post(`/customers/`, {
     company_id: companyId,
     name,
     phone,
