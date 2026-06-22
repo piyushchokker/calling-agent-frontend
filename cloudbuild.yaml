@@ -1,19 +1,17 @@
 steps:
-  # 1. Build the Docker container image
+  # 1. Build the Docker container image securely using Secret Manager
   - name: 'gcr.io/cloud-builders/docker'
-    args: 
-      - 'build'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_SUPABASE_URL=https://rdsaohuyogbgodyfkyex.supabase.co'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc2FvaHV5b2diZ29keWZreWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzc1MzgsImV4cCI6MjA5NzYxMzUzOH0.z7pfbWPznnnuv_sYU8Dc6ougulrslIGfQv-EhqYXYGY'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=https://callagent-backend-374294783677.asia-south1.run.app/api/v1'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_TENET_API_KEY=your_dashboard_key'
-      - '-t'
-      - 'asia-south1-docker.pkg.dev/ai-calling-agent-piyushchokker/callagent-repo/callagent-frontend:$COMMIT_SHA'
-      - '.'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker build \
+        --build-arg NEXT_PUBLIC_SUPABASE_URL="$$NEXT_PUBLIC_SUPABASE_URL" \
+        --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+        --build-arg NEXT_PUBLIC_API_URL="$$NEXT_PUBLIC_API_URL" \
+        --build-arg NEXT_PUBLIC_TENET_API_KEY="$$NEXT_PUBLIC_TENET_API_KEY" \
+        -t asia-south1-docker.pkg.dev/ai-calling-agent-piyushchokker/callagent-repo/callagent-frontend:$COMMIT_SHA .
+    secretEnv: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_API_URL', 'NEXT_PUBLIC_TENET_API_KEY']
     
   # 2. Push the container image to Google Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -33,6 +31,18 @@ steps:
       - '--region'
       - 'asia-south1'
       - '--allow-unauthenticated'
+
+# Tell Cloud Build to pull these secrets directly from Secret Manager
+availableSecrets:
+  secretManager:
+    - versionName: projects/ai-calling-agent-piyushchokker/secrets/NEXT_PUBLIC_SUPABASE_URL/versions/latest
+      env: 'NEXT_PUBLIC_SUPABASE_URL'
+    - versionName: projects/ai-calling-agent-piyushchokker/secrets/NEXT_PUBLIC_SUPABASE_ANON_KEY/versions/latest
+      env: 'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+    - versionName: projects/ai-calling-agent-piyushchokker/secrets/NEXT_PUBLIC_API_URL/versions/latest
+      env: 'NEXT_PUBLIC_API_URL'
+    - versionName: projects/ai-calling-agent-piyushchokker/secrets/NEXT_PUBLIC_TENET_API_KEY/versions/latest
+      env: 'NEXT_PUBLIC_TENET_API_KEY'
 
 # Specify the images to be pushed
 images:
